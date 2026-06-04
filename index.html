@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Haji Flow: Susun Alur Mabrur</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+
+    <style>
+        :root {
+            --bg-grad-1: #0f172a;
+            --bg-grad-2: #1e293b;
+            --card-bg: #334155;
+            --primary: #10b981;
+            --secondary: #f59e0b;
+        }
+
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2));
+            color: #f8fafc;
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+
+        .title-font { font-family: 'Baloo 2', cursive; }
+
+
+        .list-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+
+        .flow-item {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+
+        .flow-item:active {
+            cursor: grabbing;
+        }
+
+
+        .flow-item.sortable-ghost {
+            opacity: 0.4;
+            background: rgba(16, 185, 129, 0.2);
+            border-style: dashed;
+        }
+
+
+        .flow-item.correct {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.15);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+            pointer-events: none; /* Kunci jika sudah benar */
+        }
+       
+        .flow-item.incorrect {
+            border-color: #ef4444;
+            animation: shake 0.5s;
+        }
+
+
+        .item-icon-box {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+
+        .item-content {
+            flex-grow: 1;
+        }
+
+
+        .item-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+            color: #f8fafc;
+        }
+
+
+        .item-desc {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+
+
+        .drag-handle {
+            color: #94a3b8;
+            font-size: 1.5rem;
+            padding: 5px;
+        }
+
+
+        .slot-number {
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 4rem;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.05);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+       
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+
+        .modal-content {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            border-radius: 24px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+
+        .btn {
+            background: linear-gradient(to bottom, #10b981, #059669);
+            color: white;
+            border: 3px solid #a7f3d0;
+            padding: 12px 32px;
+            font-size: 1.2rem;
+            border-radius: 999px;
+            font-weight: bold;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+            text-transform: uppercase;
+            width: 100%;
+            margin-top: 20px;
+        }
+       
+        .btn:active { transform: scale(0.95); }
+        .btn:hover { filter: brightness(1.1); }
+       
+        .btn-check {
+            background: linear-gradient(to bottom, #3b82f6, #2563eb);
+            border-color: #bfdbfe;
+        }
+
+
+        /* Top Bar */
+        header {
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+       
+        /* Floating Image Graphic */
+        .header-graphic {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto 10px auto;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+       
+        .header-graphic img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+
+    </style>
+</head>
+<body>
+
+
+    <header>
+        <div>
+            <h1 class="title-font text-2xl md:text-3xl text-yellow-400 drop-shadow-md m-0 leading-none">Haji Flow</h1>
+            <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Susun Alur Mabrur</p>
+        </div>
+        <div class="text-right">
+            <div class="text-sm text-gray-400">Skor</div>
+            <div id="score-display" class="title-font text-2xl text-emerald-400 leading-none">0</div>
+        </div>
+    </header>
+
+
+    <!-- Grafik Referensi Alur -->
+    <div class="px-4">
+        <div class="header-graphic hidden md:block">
+            <img src="https://i.ibb.co.com/PvfS4JNm/Chat-GPT-Image-2-Mei-2026-14-36-10.png" alt="Bagan Alur Haji">
+        </div>
+    </div>
+
+
+    <main class="flex-grow flex flex-col px-4 pb-24 pt-4">
+        <p class="text-center text-sm text-gray-300 mb-6 max-w-md mx-auto">
+            Geser (Drag & Drop) kartu di bawah ini untuk menyusun urutan ibadah Haji dari awal hingga akhir.
+        </p>
+
+
+        <div id="sortable-list" class="list-container relative">
+            <!-- Items akan di-generate via JavaScript -->
+        </div>
+    </main>
+
+
+    <!-- Tombol Periksa (Fixed at bottom) -->
+    <div class="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-slate-900 to-transparent z-10 flex justify-center">
+        <button id="btn-check-order" class="btn btn-check max-w-sm m-0 shadow-[0_0_20px_rgba(59,130,246,0.5)]">Periksa Urutan</button>
+    </div>
+
+
+    <div id="menu-modal" class="modal-overlay show">
+        <div class="modal-content border-yellow-500/50">
+            <h1 class="title-font text-5xl text-yellow-400 mb-2 drop-shadow-lg">HAJI FLOW</h1>
+            <p class="text-emerald-300 font-semibold mb-6">Pahami Alur, Gapai Mabrur</p>
+           
+            <div class="bg-black/40 rounded-xl p-5 mb-6 text-left text-white/90 text-sm space-y-3 border border-white/10">
+                <p>Materi Bab 2.1: <b>Alur Rangkaian Ibadah Haji</b></p>
+                <ul class="list-disc pl-5 space-y-2 text-gray-300">
+                    <li>Kamu akan diberikan kartu-kartu berisi kegiatan ibadah haji secara acak.</li>
+                    <li>Tugasmu adalah menyusunnya sesuai urutan waktu (dari tanggal 8 Dzulhijjah hingga selesai).</li>
+                    <li>Tekan tahan ikon garis tiga (≡) lalu geser kartu ke atas atau ke bawah.</li>
+                    <li>Jika sudah yakin, tekan tombol "Periksa Urutan".</li>
+                </ul>
+            </div>
+           
+            <button id="start-btn" class="btn title-font text-xl">Mulai Menyusun</button>
+        </div>
+    </div>
+
+
+    <div id="result-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div id="result-icon" class="text-6xl mb-4">🎉</div>
+            <h2 id="result-title" class="title-font text-4xl text-white mb-2">Luar Biasa!</h2>
+            <p id="result-msg" class="text-gray-300 mb-6">Urutan alur haji sudah tepat semuanya.</p>
+           
+            <div class="bg-slate-800 rounded-xl p-4 mb-6 border border-slate-600">
+                <p class="text-sm text-gray-400 mb-1">Skor Kamu</p>
+                <p id="final-score" class="title-font text-5xl text-yellow-400">100</p>
+            </div>
+           
+            <button id="restart-btn" class="btn title-font">Main Lagi</button>
+        </div>
+    </div>
+
+
+    <script>
+        // Data lengkap Alur Haji berdasarkan teks user + standar pelengkap
+        const hajjFlowData = [
+            {
+                id: "step1",
+                order: 1,
+                title: "1. Ihram Haji",
+                date: "8 Dzulhijjah",
+                icon: "👕",
+                desc: "Mandi sunnah, pakai wewangian (di tubuh), pakai pakaian ihram, dan niat haji. Larangan ihram mulai berlaku."
+            },
+            {
+                id: "step2",
+                order: 2,
+                title: "2. Mabit di Mina (Hari Tarwiyah)",
+                date: "8 Dzulhijjah",
+                icon: "⛺",
+                desc: "Bermalam di Mina. Melaksanakan shalat 5 waktu secara qashar tanpa dijam' (Sunnah Muakkadah)."
+            },
+            {
+                id: "step3",
+                order: 3,
+                title: "3. Wukuf di Arafah",
+                date: "9 Dzulhijjah",
+                icon: "🤲",
+                desc: "Puncak haji (Dzuhur - terbenam matahari). Mendengar khutbah, shalat jam' qashar, perbanyak doa menghadap kiblat."
+            },
+            {
+                id: "step4",
+                order: 4,
+                title: "4. Mabit di Muzdalifah",
+                date: "Malam 10 Dzulhijjah",
+                icon: "🪨",
+                desc: "Berangkat setelah wukuf. Mabit hingga lewat tengah malam. Mengambil 7 batu kerikil. Shalat Maghrib & Isya jam' takhir qashar."
+            },
+            {
+                id: "step5",
+                order: 5,
+                title: "5. Lontar Jumrah Aqabah & Tahallul Awal",
+                date: "10 Dzulhijjah",
+                icon: "🎯",
+                desc: "Melempar 7 kerikil ke pilar Aqabah. Dilanjutkan cukur rambut (Tahallul Awal). Larangan ihram dicabut kecuali jimak."
+            },
+            {
+                id: "step6",
+                order: 6,
+                title: "6. Penyembelihan Hewan Dam",
+                date: "10 - 13 Dzulhijjah",
+                icon: "🐐",
+                desc: "Bagi Haji Tamattu', wajib menyembelih kambing sebagai hadyu/dam bentuk syukur."
+            },
+            {
+                id: "step7",
+                order: 7,
+                title: "7. Thawaf Ifadhah & Sa'i",
+                date: "Setelah Tahallul Awal",
+                icon: "🕋",
+                desc: "Kembali ke Masjidil Haram. Thawaf 7 putaran dan Sa'i 7 kali. Setelah ini terjadi Tahallul Tsani (semua halal)."
+            },
+            {
+                id: "step8",
+                order: 8,
+                title: "8. Mabit di Mina & Lontar 3 Jumrah",
+                date: "11, 12, 13 Dzulhijjah",
+                icon: "🏕️",
+                desc: "Hari Tasyrik. Melempar jumrah Ula, Wustha, Aqabah tiap hari. Bisa Nafar Awal (tgl 12) atau Nafar Tsani (tgl 13)."
+            },
+            {
+                id: "step9",
+                order: 9,
+                title: "9. Thawaf Wada'",
+                date: "Sebelum Pulang",
+                icon: "👋",
+                desc: "Thawaf perpisahan sebelum meninggalkan kota Makkah menuju tanah air/Madinah tanpa diikuti Sa'i."
+            }
+        ];
+
+
+        // State game
+        let currentItems = [];
+        let score = 0;
+        let attempts = 0;
+        let sortableInstance = null;
+
+
+        // Elemen DOM
+        const listContainer = document.getElementById('sortable-list');
+        const scoreDisplay = document.getElementById('score-display');
+        const btnCheck = document.getElementById('btn-check-order');
+
+
+        // Fungsi utilitas untuk mengacak array
+        function shuffleArray(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+
+        function initGame() {
+            score = 0;
+            attempts = 0;
+            updateScoreDisplay();
+           
+            // Sembunyikan modal
+            document.getElementById('menu-modal').classList.remove('show');
+            document.getElementById('result-modal').classList.remove('show');
+           
+            // Acak data
+            currentItems = shuffleArray([...hajjFlowData]);
+           
+            renderList();
+            initSortable();
+        }
+
+
+        function renderList() {
+            listContainer.innerHTML = '';
+           
+            currentItems.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'flow-item';
+                el.dataset.id = item.id;
+                el.dataset.order = item.order; // Urutan sebenarnya
+               
+                // Angka bayangan di background
+                const slotNum = document.createElement('div');
+                slotNum.className = 'slot-number title-font';
+                slotNum.textContent = index + 1;
+                el.appendChild(slotNum);
+               
+                el.innerHTML += `
+                    <div class="drag-handle cursor-grab">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </div>
+                    <div class="item-icon-box">
+                        ${item.icon}
+                    </div>
+                    <div class="item-content">
+                        <div class="flex justify-between items-baseline">
+                            <h3 class="item-title">${item.title.substring(item.title.indexOf(' ')+1)}</h3> <!-- Buang angkanya agar tidak ketahuan -->
+                            <span class="text-xs text-yellow-400 font-bold bg-yellow-900/40 px-2 py-1 rounded">${item.date}</span>
+                        </div>
+                        <p class="item-desc">${item.desc}</p>
+                    </div>
+                `;
+               
+                listContainer.appendChild(el);
+            });
+           
+            // Reset state tombol
+            btnCheck.textContent = "Periksa Urutan";
+            btnCheck.disabled = false;
+            btnCheck.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+
+        function initSortable() {
+            if (sortableInstance) {
+                sortableInstance.destroy();
+            }
+           
+            sortableInstance = new Sortable(listContainer, {
+                animation: 250,
+                handle: '.drag-handle', // Drag area
+                ghostClass: 'sortable-ghost',
+                easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+                onEnd: function (evt) {
+                    // Update nomor bayangan setelah drop
+                    updateSlotNumbers();
+                    // Hapus status correct/incorrect jika user menggeser lagi
+                    resetItemStyles();
+                }
+            });
+        }
+
+
+        function updateSlotNumbers() {
+            const items = listContainer.children;
+            for(let i=0; i<items.length; i++) {
+                const numEl = items[i].querySelector('.slot-number');
+                if(numEl) numEl.textContent = i + 1;
+            }
+        }
+
+
+        function resetItemStyles() {
+            const items = document.querySelectorAll('.flow-item');
+            items.forEach(item => {
+                // Jangan reset yang sudah 'correct' jika ingin dibuat mode mudah,
+                // tapi untuk sekarang kita biarkan user bisa mengubah semua sebelum perfect.
+                if(!item.classList.contains('correct')) {
+                    item.classList.remove('incorrect');
+                }
+            });
+        }
+
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = score;
+        }
+
+
+        // Audio Effects menggunakan Web Audio API
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+       
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+        }
+
+
+        function playSound(type) {
+            initAudio();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+           
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+
+            if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+                osc.frequency.setValueAtTime(554.37, audioCtx.currentTime + 0.1); // C#5
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.2); // E5
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'win') {
+                osc.type = 'sine';
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => { // C major chord arpeggio
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i*0.1));
+                });
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1);
+            }
+        }
+
+
+        btnCheck.addEventListener('click', () => {
+            attempts++;
+            const items = document.querySelectorAll('.flow-item');
+            let isAllCorrect = true;
+            let correctCountThisTurn = 0;
+
+
+            items.forEach((item, index) => {
+                // Urutan index UI dimulai dari 0, order data dimulai dari 1
+                const expectedOrder = index + 1;
+                const actualOrder = parseInt(item.dataset.order);
+
+
+                // Bersihkan style lama
+                item.classList.remove('incorrect');
+
+
+                if (actualOrder === expectedOrder) {
+                    if(!item.classList.contains('correct')) {
+                        item.classList.add('correct');
+                        // Ubah ikon handle menjadi checkmark
+                        const handle = item.querySelector('.drag-handle');
+                        handle.innerHTML = `<svg class="text-emerald-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                        handle.classList.remove('cursor-grab');
+                        correctCountThisTurn++;
+                    }
+                } else {
+                    isAllCorrect = false;
+                    // Memicu animasi ulang dengan trik reflow
+                    void item.offsetWidth;
+                    item.classList.add('incorrect');
+                }
+            });
+
+
+            // Kalkulasi Skor
+            // Base score per item benar: 100/9 = ~11.
+            // Penalti per percobaan: -5 per percobaan.
+            let earnedScore = correctCountThisTurn * 15;
+            if(earnedScore > 0) {
+                let penalty = (attempts - 1) * 5;
+                let finalAdd = Math.max(5, earnedScore - penalty); // Minimal dpt 5 poin jika benar
+                score += finalAdd;
+                updateScoreDisplay();
+                playSound('correct');
+            } else if (!isAllCorrect) {
+                playSound('wrong');
+            }
+
+
+            if (isAllCorrect) {
+                handleWin();
+            } else {
+                btnCheck.textContent = "Coba Perbaiki yang Merah";
+            }
+        });
+
+
+        function handleWin() {
+            playSound('win');
+            sortableInstance.option("disabled", true); // Matikan drag
+            btnCheck.disabled = true;
+            btnCheck.classList.add('opacity-50', 'cursor-not-allowed');
+
+
+            // Hitung skor final bonus jika percobaan sedikit
+            if(attempts === 1) score += 50; // Perfect bonus
+            else if(attempts === 2) score += 20;
+           
+            updateScoreDisplay();
+
+
+            // Tampilkan modal hasil
+            setTimeout(() => {
+                const modal = document.getElementById('result-modal');
+                document.getElementById('final-score').textContent = score;
+               
+                const title = document.getElementById('result-title');
+                const msg = document.getElementById('result-msg');
+                const icon = document.getElementById('result-icon');
+
+
+                if(attempts === 1) {
+                    title.textContent = "Sempurna!";
+                    title.className = "title-font text-4xl text-yellow-400 mb-2";
+                    msg.textContent = "Luar biasa! Sekali coba langsung benar semua. Pemahamanmu tentang alur haji sangat kuat.";
+                    icon.textContent = "🏆";
+                } else {
+                    title.textContent = "Alhamdulillah Selesai!";
+                    title.className = "title-font text-4xl text-emerald-400 mb-2";
+                    msg.textContent = `Kamu berhasil menyusun urutan dengan benar setelah ${attempts} kali percobaan.`;
+                    icon.textContent = "🕋";
+                }
+
+
+                modal.classList.add('show');
+            }, 800);
+        }
+
+
+        // Event Listeners Buttons
+        document.getElementById('start-btn').addEventListener('click', () => {
+            initAudio(); // Initialize audio context on user interaction
+            initGame();
+        });
+       
+        document.getElementById('restart-btn').addEventListener('click', initGame);
+
+
+    </script>
+</body>
+</html>
